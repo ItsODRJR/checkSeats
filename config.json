@@ -1,7 +1,0 @@
-{
-    "username":"email@tamu.edu",
-    "password": "tamupassword",
-    "class_names": ["rock", "tech", "newton","ii"],
-    "discord_token": "TOKEN",
-    "channel_id": "CHANNEL_ID"
-}
