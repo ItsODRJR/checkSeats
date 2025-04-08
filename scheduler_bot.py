@@ -26,9 +26,12 @@ CLASS_NAMES = []
 DISCORD_TOKEN = ""
 CHANNEL_NAME = ""
 TERM_NAME = ""
+REG_TIME = ""
+ACC_ID = ""
 HEADLESS = False
 AUTO_REGISTER = False
 driver = None
+DC_PING_NAME = ""
 
 CONFIG_DIR = os.path.join(os.environ["LOCALAPPDATA"], "TAMUCheckSeats")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
@@ -74,7 +77,7 @@ def try_register(driver, wait):
         confirm_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Continue')]")))
         print("Clicking Continue to confirm registration...")
         driver.execute_script("arguments[0].click();", confirm_btn)
-        notify_discord("✅ Successfully registered for your shopping cart!")
+        notify_discord("✅ Successfully registered for your shopping cart! " + DC_PING_NAME)
         driver.quit()
         return True
     except Exception as e:
@@ -185,7 +188,7 @@ def login_collegescheduler():
                     yes_device_button = wait.until(EC.element_to_be_clickable((By.ID, "trust-browser-button")))
                     driver.execute_script("arguments[0].click();", yes_device_button)
                 except:
-                    notify_discord("Duo login failed. Manual intervention required.")
+                    notify_discord("Duo login failed. Manual intervention required. " + DC_PING_NAME)
                     time.sleep(99999999)
 
                 try:
@@ -223,8 +226,18 @@ def login_collegescheduler():
 
             if AUTO_REGISTER:
                 print("Entered Auto Register Logic")
+
+                # Wait until the registration time (epoch) has been reached
                 cart_tab = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@aria-label, 'Shopping Cart contains')]")))
                 driver.execute_script("arguments[0].click();", cart_tab)
+
+                if REG_TIME:
+                    now = time.time()
+                    if now < float(REG_TIME):
+                        wait_seconds = float(REG_TIME) - now
+                        print(f"Waiting {int(wait_seconds)} seconds until registration time...")
+                        time.sleep(wait_seconds)
+
                 while not stop_event.is_set():
                     driver.refresh()
                     time.sleep(3)
@@ -257,7 +270,7 @@ def login_collegescheduler():
                                     seats_open = tds[7].text.strip()
                                     if int(seats_open) > 0:
                                         print(f"{crn} has {seats_open} seats open.")
-                                        notify_discord(f"New opening: {tds[3].text.strip()}-{tds[4].text.strip()}-{tds[5].text.strip()} {crn} has {seats_open} seats!")
+                                        notify_discord(f"New opening: {tds[3].text.strip()}-{tds[4].text.strip()}-{tds[5].text.strip()} {crn} has {seats_open} seats! " + DC_PING_NAME)
                             except Exception as e:
                                 print(f"Row error: {e}")
                     except Exception as e:
@@ -276,7 +289,7 @@ def login_collegescheduler():
         print("Done.")
 
 def start_monitoring():
-    global notifier, USERNAME, PASSWORD, CLASS_NAMES, DISCORD_TOKEN, CHANNEL_NAME, TERM_NAME, HEADLESS, AUTO_REGISTER, done
+    global notifier, USERNAME, PASSWORD, CLASS_NAMES, DISCORD_TOKEN, CHANNEL_NAME, TERM_NAME, HEADLESS, AUTO_REGISTER, REG_TIME, ACC_ID, DC_PING_NAME, done
 
     config = load_config()
     USERNAME = config.get('username')
@@ -285,11 +298,16 @@ def start_monitoring():
     DISCORD_TOKEN = config.get('discord_token')
     CHANNEL_NAME = config.get('channel_name')
     TERM_NAME = config.get('term_name')
+    REG_TIME = config.get('reg_time')
+    ACC_ID = config.get('discord_account_id')
     HEADLESS = config.get('headless', False)
     AUTO_REGISTER = config.get('auto_register', False)
 
     notifier = DiscordNotifier(CHANNEL_NAME)
     notifier.start_bot(DISCORD_TOKEN)
+
+    if ACC_ID != None:
+        DC_PING_NAME = "<@"+ACC_ID+">"
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         while not stop_event.is_set():
