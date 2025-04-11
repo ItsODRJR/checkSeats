@@ -13,18 +13,6 @@ CONFIG_DIR = os.path.join(os.environ["LOCALAPPDATA"], "TAMUClassSwap")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 COOKIE = ""
 
-class TextRedirector:
-    def __init__(self, text_widget, tag="stdout"):
-        self.text_widget = text_widget
-        self.tag = tag
-
-    def write(self, message):
-        self.text_widget.insert(tk.END, message)
-        self.text_widget.see(tk.END)
-
-    def flush(self):
-        pass
-
 def save_config(data):
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
@@ -39,10 +27,10 @@ def load_config():
 data = load_config()
 COOKIE = data.get("cookie", "")
 
-# ------------------------
+# ---------------------------------------------------
 # Compound widget for a course group:
 #   Allows selection of a course and addition of multiple CRN entries.
-# ------------------------
+# ---------------------------------------------------
 class CourseGroupFrame(tk.Frame):
     def __init__(self, parent, remove_callback):
         """
@@ -101,21 +89,23 @@ class CourseGroupFrame(tk.Frame):
         for crn in course_data.get("crns", []):
             self.add_crn_field(crn)
 
-# ------------------------
-# ConfigTab now supports multiple courses (each with its own CRN list)
-# when "Watch" mode is selected.
-# ------------------------
+# ---------------------------------------------------
+# ConfigTab now supports multiple courses (each with its own CRN list),
+# plus new fields for username and password.
+# ---------------------------------------------------
 class ConfigTab(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
 
         # Variables for required settings.
+        self.username_var = tk.StringVar()
+        self.password_var = tk.StringVar()
+        self.cookie_var = tk.StringVar()
         self.token_var = tk.StringVar()
         self.channel_var = tk.StringVar()
-        self.term_var = tk.StringVar()
         self.id_var = tk.StringVar()
+        self.term_var = tk.StringVar()
         self.type_var = tk.StringVar(value="watch")  # Default to "watch"
-        self.cookie_var = tk.StringVar()
         self.sf_var = tk.StringVar()  # swap_from
         self.st_var = tk.StringVar()  # swap_to
 
@@ -125,7 +115,7 @@ class ConfigTab(ttk.Frame):
         # Configure grid for anchoring bottom buttons/footer.
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(13, weight=1)
+        self.grid_rowconfigure(15, weight=1)
 
         self.build_ui()
         self.load_config_into_fields()
@@ -176,41 +166,50 @@ class ConfigTab(ttk.Frame):
 
     def build_ui(self):
         # --- HEADER: Required Settings ---
-        required_label = tk.Label(self, text="Required Settings", font=("Helvetica", 14, "bold"))
-        required_label.grid(row=0, column=0, columnspan=2, pady=(10, 5))
+        header_label = tk.Label(self, text="Required Settings", font=("Helvetica", 14, "bold"))
+        header_label.grid(row=0, column=0, columnspan=3, pady=(10, 5))
+
+        # CollegeScheduler Username.
+        tk.Label(self, text="CollegeScheduler Username").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self, textvariable=self.username_var, width=40).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        # CollegeScheduler Password.
+        tk.Label(self, text="CollegeScheduler Password").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self, textvariable=self.password_var, show="*", width=40).grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         # CollegeScheduler Cookie with focus-out binding.
-        tk.Label(self, text="CollegeScheduler Cookie").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        tk.Label(self, text="CollegeScheduler Cookie").grid(row=3, column=0, padx=5, pady=5, sticky="e")
         cookie_entry = tk.Entry(self, textvariable=self.cookie_var, show="*", width=40)
-        cookie_entry.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        cookie_entry.grid(row=3, column=1, padx=5, pady=5, sticky="w")
         cookie_entry.bind("<FocusOut>", lambda e: self.refresh_terms_and_courses())
+        # (No Refresh Cookie button; automatic refresh in monitor.py)
 
         # Discord Token.
-        tk.Label(self, text="Discord Token").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        tk.Entry(self, textvariable=self.token_var, show="*", width=40).grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        tk.Label(self, text="Discord Token").grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self, textvariable=self.token_var, show="*", width=40).grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
         # Discord Channel Name.
-        tk.Label(self, text="Discord Channel Name").grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        tk.Entry(self, textvariable=self.channel_var, width=40).grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        tk.Label(self, text="Discord Channel Name").grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self, textvariable=self.channel_var, width=40).grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
         # Discord Account ID.
-        tk.Label(self, text="Discord Account ID").grid(row=4, column=0, padx=5, pady=5, sticky="e")
-        tk.Entry(self, textvariable=self.id_var, width=40).grid(row=4, column=1, padx=5, pady=5, sticky="w")
+        tk.Label(self, text="Discord Account ID").grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        tk.Entry(self, textvariable=self.id_var, width=40).grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
         # Term Name.
-        tk.Label(self, text="Term Name").grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        tk.Label(self, text="Term Name").grid(row=7, column=0, padx=5, pady=5, sticky="e")
         self.term_dropdown = ttk.Combobox(self, textvariable=self.term_var,
                                           values=self.fetch_terms(), state="readonly", width=37)
-        self.term_dropdown.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        self.term_dropdown.grid(row=7, column=1, padx=5, pady=5, sticky="w")
         self.term_dropdown.bind("<<ComboboxSelected>>", self.on_term_select)
 
         # --- HEADER: Select Mode ---
         mode_label = tk.Label(self, text="Select Mode", font=("Helvetica", 14, "bold"))
-        mode_label.grid(row=6, column=0, columnspan=2, pady=(10, 5))
+        mode_label.grid(row=8, column=0, columnspan=3, pady=(10, 5))
 
         # Radio Buttons for Watch vs. Swap.
         self.type_frame = tk.Frame(self)
-        self.type_frame.grid(row=7, column=0, columnspan=2)
+        self.type_frame.grid(row=9, column=0, columnspan=3)
         tk.Label(self.type_frame, text="Type:").pack(side="left", padx=(0, 10))
         self.watch_radio = tk.Radiobutton(self.type_frame, text="Watch", variable=self.type_var,
                                           value="watch", command=self.update_type_fields)
@@ -221,9 +220,9 @@ class ConfigTab(ttk.Frame):
 
         # --- WATCH MODE: Courses with CRNs -------------
         self.course_groups_container = tk.Frame(self)
-        self.course_groups_container.grid(row=8, column=0, columnspan=2, sticky="we")
+        self.course_groups_container.grid(row=10, column=0, columnspan=3, sticky="we")
         self.add_course_btn = tk.Button(self, text="Add Course", command=self.add_course_group)
-        self.add_course_btn.grid(row=9, column=0, columnspan=2, pady=5)
+        self.add_course_btn.grid(row=11, column=0, columnspan=3, pady=5)
 
         # --- SWAP MODE: Swap From/To -------------
         self.swap_frame = tk.Frame(self)
@@ -231,11 +230,11 @@ class ConfigTab(ttk.Frame):
         tk.Entry(self.swap_frame, textvariable=self.sf_var, width=40).grid(row=0, column=1, padx=5, pady=2, sticky="w")
         tk.Label(self.swap_frame, text="Swap To").grid(row=1, column=0, padx=5, pady=2, sticky="e")
         tk.Entry(self.swap_frame, textvariable=self.st_var, width=40).grid(row=1, column=1, padx=5, pady=2, sticky="w")
-        self.swap_frame.grid(row=8, column=0, columnspan=2, sticky="we")
+        self.swap_frame.grid(row=10, column=0, columnspan=3, sticky="we")
 
         # --- Bottom Buttons and Footer ---
         bottom_frame = tk.Frame(self)
-        bottom_frame.grid(row=14, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+        bottom_frame.grid(row=15, column=0, columnspan=3, sticky="we", padx=5, pady=5)
         self.save_button = tk.Button(bottom_frame, text="Save Config", command=self.save_fields_to_config)
         self.save_button.pack(side="right")
         self.footer_label = tk.Label(bottom_frame, text="Make sure to save config!", fg="gray")
@@ -260,16 +259,18 @@ class ConfigTab(ttk.Frame):
         """
         if self.type_var.get() == "watch":
             self.swap_frame.grid_remove()
-            self.course_groups_container.grid(row=8, column=0, columnspan=2, sticky="we")
-            self.add_course_btn.grid(row=9, column=0, columnspan=2, pady=5)
+            self.course_groups_container.grid(row=10, column=0, columnspan=3, sticky="we")
+            self.add_course_btn.grid(row=11, column=0, columnspan=3, pady=5)
         else:
             self.course_groups_container.grid_remove()
             self.add_course_btn.grid_remove()
-            self.swap_frame.grid(row=8, column=0, columnspan=2, sticky="we")
+            self.swap_frame.grid(row=10, column=0, columnspan=3, sticky="we")
 
     def load_config_into_fields(self):
         global COOKIE
         data = load_config()
+        self.username_var.set(data.get("username", ""))
+        self.password_var.set(data.get("password", ""))
         self.token_var.set(data.get("discord_token", ""))
         self.channel_var.set(data.get("channel_name", ""))
         self.id_var.set(data.get("discord_account_id", ""))
@@ -306,6 +307,8 @@ class ConfigTab(ttk.Frame):
             courses_data.append(course_entry)
 
         data = {
+            "username": self.username_var.get(),
+            "password": self.password_var.get(),
             "discord_token": self.token_var.get(),
             "channel_name": self.channel_var.get(),
             "discord_account_id": self.id_var.get(),
@@ -345,6 +348,16 @@ class MonitorTab(ttk.Frame):
         self.log_box.insert(tk.END, msg + "\n")
         self.log_box.see(tk.END)
 
+class TextRedirector:
+    def __init__(self, text_widget, tag="stdout"):
+        self.text_widget = text_widget
+        self.tag = tag
+    def write(self, message):
+        self.text_widget.insert(tk.END, message)
+        self.text_widget.see(tk.END)
+    def flush(self):
+        pass
+
 def main():
     root = tk.Tk()
     root.title("CollegeScheduler Monitor")
@@ -363,7 +376,7 @@ def main():
     notebook.add(config_tab, text="Config")
     notebook.pack(fill="both", expand=True)
 
-    # Hide to tray function.
+    # Hide-to-tray functions.
     def hide_window():
         root.withdraw()
         show_tray_icon()
