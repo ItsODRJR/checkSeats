@@ -38,6 +38,8 @@ token = ""
 TERM = ""
 TERM_ID = ""
 
+driver = None
+
 # Global flag to control monitoring loops.
 MONITOR_ACTIVE = True
 
@@ -53,6 +55,8 @@ def save_config(data):
         json.dump(data, f, indent=4)
 
 def refresh_cookie():
+    global driver
+    print("Refreshing cookie...")
     """
     Refresh the cookie using a headless browser to simulate a full login flow.
     This function logs in to CollegeScheduler using Microsoft SSO,
@@ -66,7 +70,8 @@ def refresh_cookie():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
     
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    if not driver:
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     wait = WebDriverWait(driver, 30)
     
     try:
@@ -124,8 +129,6 @@ def refresh_cookie():
     except Exception as e:
         print("Error during Selenium login:", e)
         return None
-    finally:
-        driver.quit()
 
 def get_token():
     global token
