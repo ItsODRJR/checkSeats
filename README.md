@@ -1,4 +1,5 @@
-# 📅 CollegeScheduler Monitor (TAMU Class Checker Bot)
+# 📅 CheckSeats
+An Automated CollegeScheduler Monitor & Class Swapper for Texas A&M University
 
 This is a desktop utility that monitors Texas A&M University’s **College Scheduler** and **automatically alerts or swaps courses** based on your configuration. Perfect for grabbing those hard-to-get class slots before anyone else does.
 
