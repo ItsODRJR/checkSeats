@@ -65,7 +65,7 @@ The app logs into TAMU College Scheduler using your credentials and cookie, cont
 
 ## 🛠 Requirements
 
-- Windows 10
+- Windows 10+
 - Discord bot token + channel setup
 - Valid TAMU Net ID login and session cookie
 
